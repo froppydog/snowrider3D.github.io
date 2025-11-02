@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Snow Rider 3D Simple Clone</title>
+  <style>
+    body { background: #222; margin: 0; }
+    canvas { display: block; margin: 0 auto; background: #87ceeb; }
+  </style>
+</head>
+<body>
+<canvas id="game" width="400" height="600"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const sled = {
+  x: 200,
+  y: 500,
+  width: 40,
+  height: 20,
+  speed: 6
+};
+
+const obstacles = [];
+const gifts = [];
+let score = 0;
+let gameOver = false;
+
+function spawnObstacle() {
+  obstacles.push({
+    x: Math.random() * (canvas.width - 40),
+    y: -40,
+    width: 40,
+    height: 40
+  });
+}
+
+function spawnGift() {
+  gifts.push({
+    x: Math.random() * (canvas.width - 20),
+    y: -30,
+    width: 20,
+    height: 20
+  });
+}
+
+function drawSled() {
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(sled.x, sled.y, sled.width, sled.height);
+  ctx.fillStyle = "#c00";
+  ctx.fillRect(sled.x + sled.width/4, sled.y-10, sled.width/2, 10); // sled front
+}
+
+function drawObstacles() {
+  ctx.fillStyle = "#228B22";
+  obstacles.forEach(obs => {
+    ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+    // simple tree
+    ctx.beginPath();
+    ctx.moveTo(obs.x + obs.width/2, obs.y);
+    ctx.lineTo(obs.x, obs.y + obs.height);
+    ctx.lineTo(obs.x + obs.width, obs.y + obs.height);
+    ctx.closePath();
+    ctx.fill();
+  });
+}
+
+function drawGifts() {
+  ctx.fillStyle = "#FFD700";
+  gifts.forEach(gift => {
+    ctx.fillRect(gift.x, gift.y, gift.width, gift.height);
+    ctx.fillStyle = "#b22234";
+    ctx.fillRect(gift.x + gift.width/4, gift.y, gift.width/2, gift.height);
+    ctx.fillStyle = "#FFD700";
+  });
+}
+
+function moveObjects() {
+  obstacles.forEach(obs => obs.y += sled.speed);
+  gifts.forEach(gift => gift.y += sled.speed);
+}
+
+function collision(a, b) {
+  return a.x < b.x + b.width && a.x + a.width > b.x &&
+         a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+function checkCollisions() {
+  obstacles.forEach(obs => {
+    if (collision(sled, obs)) gameOver = true;
+  });
+  gifts.forEach((gift, i) => {
+    if (collision(sled, gift)) {
+      gifts.splice(i, 1);
+      score++;
+    }
+  });
+}
+
+function drawScore() {
+  ctx.fillStyle = "#000";
+  ctx.font = "24px Arial";
+  ctx.fillText("Score: " + score, 10, 30);
+}
+
+let spawnTimer = 0;
+let giftTimer = 0;
+
+function gameLoop() {
+  if (gameOver) {
+    ctx.fillStyle = "#000";
+    ctx.font = "48px Arial";
+    ctx.fillText("Game Over!", 70, 300);
+    ctx.font = "32px Arial";
+    ctx.fillText("Score: " + score, 130, 350);
+    return;
+  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  drawSled();
+  drawObstacles();
+  drawGifts();
+  drawScore();
+
+  moveObjects();
+  checkCollisions();
+
+  // Remove off-screen items
+  obstacles.filter(obs => obs.y < canvas.height);
+  gifts.filter(gift => gift.y < canvas.height);
+
+  spawnTimer++;
+  giftTimer++;
+
+  if (spawnTimer > 30) {
+    spawnObstacle();
+    spawnTimer = 0;
+  }
+  if (giftTimer > 90) {
+    spawnGift();
+    giftTimer = 0;
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft" && sled.x > 0) sled.x -= sled.speed * 2;
+  if (e.key === "ArrowRight" && sled.x < canvas.width - sled.width) sled.x += sled.speed * 2;
+  if (gameOver && e.key === "Enter") location.reload();
+});
+
+gameLoop();
+</script>
+</body>
+</html>
